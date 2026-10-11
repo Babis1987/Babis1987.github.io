@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thesis results dashboard · C. Lazaridis Patsalias</title>
+<meta name="description" content="Interactive results dashboard for the MSc thesis on internal representations in Transformer and Mamba models trained with autoregressive and JEPA-like objectives on Othello.">
+<meta name="theme-color" content="#03101a">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;
+--bg:#03111b;--card:#0b1823;--wash:#13232f;--ink:#f3efe8;--ink2:#b8c7d1;--muted:#7f93a1;
+--grid:#1a2c39;--axis:#2c4352;--border:#263c4a;--gold:#ebc784;--link:#90cde0;
+--t:#3987e5;--m:#c98500;--li:#d95926;--na:#9085e9;--ad:#199e70;--sel:#16314a;
+--sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:5rem}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.site-art{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--bg)}
+.site-art::before{content:"";position:absolute;inset:0;background:url("https://clazaridis.com/assets/personal-site-bg-Du2AYjH2.webp") center top/cover no-repeat;opacity:.65}
+.site-art::after{content:"";position:absolute;inset:0;width:min(100%,75rem);margin-inline:auto;
+background:linear-gradient(90deg,transparent,rgba(3,17,27,.94) 9%,rgba(3,17,27,.96) 50%,rgba(3,17,27,.94) 91%,transparent)}
+@media (max-width:639px){.site-art::after{background:rgba(3,17,27,.92)}}
+a{color:var(--link);text-underline-offset:2px}
+code{font:13px/1.4 var(--mono);background:var(--wash);padding:1px 5px;border-radius:4px;color:var(--ink)}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(3,17,27,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(38,60,74,.6)}
+.topbar .in{display:flex;align-items:center;justify-content:space-between;gap:16px;height:56px;padding:0 20px;margin:0 auto}
+.brand{font:500 14px var(--mono);color:var(--ink);text-decoration:none;letter-spacing:-.01em}
+.brand span{color:var(--gold)}
+.toplinks{display:flex;gap:18px;font:13px var(--mono)}
+.toplinks a{color:var(--ink2);text-decoration:none}.toplinks a:hover,.toplinks a[aria-current]{color:var(--gold)}
+.eyebrow{font:500 13px/1.5 var(--mono);color:var(--gold);letter-spacing:.01em;margin:0 0 10px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--ink2);margin:0 0 6px}
+.legend .k{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;flex:none}
+.legend svg{display:inline-block;vertical-align:middle}
+svg text{font-family:var(--sans);font-size:12.5px;fill:var(--ink2)}
+svg .rowlab{fill:var(--ink);font-size:13px}
+svg .tick{fill:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+svg .val{fill:var(--ink2);font-variant-numeric:tabular-nums}
+svg .grid{stroke:var(--grid);stroke-width:1}
+svg .axis{stroke:var(--axis);stroke-width:1}
+svg .ref{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4}
+svg .reflab{fill:var(--muted);font-size:11.5px}
+svg .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+svg .hit{fill:transparent}
+svg .hit:hover{fill:#fff;fill-opacity:.04}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:#0b1823;font:12.5px/1.45 var(--sans);
+padding:7px 10px;border-radius:6px;max-width:330px;display:none;white-space:pre-line;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.note{font-size:14px;color:var(--ink2);border-left:3px solid var(--gold);padding:2px 0 2px 12px;margin:14px 0}
+
+.wrap{max-width:1200px;margin:0 auto;padding:26px 20px 64px}
+header.hero h1{font-size:28px;line-height:1.2;margin:0 0 8px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+header.hero .sub{margin:0 0 4px;color:var(--ink2);font-size:15px}
+header.hero .meta{margin:0;color:var(--ink2);font-size:13.5px}
+header.hero .meta a{white-space:nowrap}
+.bar{position:sticky;top:56px;z-index:15;background:rgba(3,17,27,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:12px 0 0;margin-top:16px;border-bottom:1px solid var(--border)}
+.filters{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center}
+.filters .fg{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;transition:opacity .15s}
+.filters .fg.dim{opacity:.4}
+.fl{font:12px var(--mono);color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:13px var(--sans);padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--ink2);cursor:pointer}
+.chip svg{display:inline-block}
+.chip[aria-pressed=true]{border-color:var(--gold);color:var(--ink);background:rgba(235,199,132,.12)}
+.chip[aria-pressed=false] svg{opacity:.45}
+.chip.all{font:12px var(--mono);color:var(--gold);background:transparent;border-style:dashed}
+.chip:hover{border-color:var(--gold)}
+.chip:focus-visible{outline:2px solid var(--link);outline-offset:1px}
+.card.empty{padding:28px 24px;text-align:center}.card.empty h3{font-size:17px}
+button.plain{font:13px var(--sans);padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
+button.plain:hover{border-color:var(--gold)}
+svg text.grp{fill:var(--gold);font:600 12px var(--mono)}
+.subh{font:600 12px var(--mono);color:var(--gold);margin:12px 0 2px}
+.heat .hg{font:600 12px var(--mono);color:var(--gold);padding:8px 0 2px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card)}
+.seg button{font:inherit;font-size:13px;padding:6px 12px;border:0;background:transparent;color:var(--ink);cursor:pointer;font-family:var(--sans)}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button[aria-pressed=true]{background:var(--gold);color:#03111b;font-weight:600}
+.seg button:focus-visible,.tabs button:focus-visible,select:focus-visible{outline:2px solid var(--link);outline-offset:-2px}
+.enc{margin:8px 0 0;font-size:12.5px;color:var(--muted)}
+.tabs{display:flex;gap:2px;margin-top:6px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;font:500 13px var(--mono);padding:9px 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--ink2);cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--gold);border-bottom-color:var(--gold)}
+#panel{padding-top:18px}
+.ctx{font:12.5px var(--mono);color:var(--muted);margin:0 0 12px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))}
+.span2{grid-column:1/-1}
+.card{background:rgba(11,24,35,.92);border:1px solid var(--border);border-radius:10px;padding:14px 16px;min-width:0}
+.card h3{font-size:15px;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--ink2);margin:0 0 10px}
+.card svg.ch{display:block;width:100%;height:auto;max-width:720px}
+.card svg.ch.wide{max-width:1100px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:rgba(11,24,35,.92);border:1px solid var(--border);border-radius:10px;padding:11px 14px}
+.kpi .l{font:12px var(--mono);color:var(--gold)}.kpi .v{font-size:25px;font-weight:700;line-height:1.3;margin-top:2px}
+.kpi .d{font-size:12.5px;color:var(--ink2)}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:12px;font:12px var(--mono);color:var(--gold)}
+.ctl select{font:13px var(--sans);padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--ink)}
+.tw{overflow:auto;border:1px solid var(--border);border-radius:8px}
+.tw.scroll{max-height:440px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--grid);white-space:nowrap}
+td.wrapc{white-space:normal;min-width:220px}
+tbody tr:last-child td{border-bottom:0}
+th{position:sticky;top:0;background:var(--card);color:var(--ink2);font:600 11.5px var(--mono);z-index:1}
+th[data-sort]{cursor:pointer;user-select:none}th[data-sort]:hover{color:var(--gold)}
+tbody tr:hover td{background:rgba(255,255,255,.03)}
+b.best{color:var(--gold)}
+.heat{display:grid;gap:3px;font-size:12.5px}
+.heat .hh{color:var(--ink2);text-align:center;padding:2px 4px;font:11.5px var(--mono)}
+.heat .hl{color:var(--ink);padding:8px 10px 8px 0;white-space:nowrap}
+.heat .hc{border-radius:6px;padding:8px 4px;text-align:center;font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink)}
+ul.find{margin:6px 0 0;padding-left:20px;font-size:14px}ul.find li{margin-bottom:7px}
+.note{font-size:13px;margin:12px 0 0}
+footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink2)}
+@media (max-width:640px){header.hero h1{font-size:23px}.bar{position:static}.card svg.ch{min-width:520px}.card svg.ch.wide{min-width:760px}.card{overflow-x:auto}}
+
+@media print{:root{color-scheme:light;--bg:#fff;--card:#fff;--wash:#f3f3f3;--ink:#111;--ink2:#333;--muted:#666;--grid:#ddd;--axis:#bbb;--border:#ccc;--gold:#7a5410;--link:#14507a}
+.site-art,.topbar,nav.toc,.bar,#tip{display:none!important}body{background:#fff}}
+</style></head>
+<body>
+<div class="site-art" aria-hidden="true"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<pattern id="hatch-t" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="rgba(57,135,229,.22)"/><line x1="0" y1="0" x2="0" y2="6" stroke="#3987e5" stroke-width="2"/></pattern>
+<pattern id="hatch-m" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="rgba(201,133,0,.22)"/><line x1="0" y1="0" x2="0" y2="6" stroke="#c98500" stroke-width="2"/></pattern>
+</defs></svg>
+<div class="topbar"><div class="in" style="max-width:1200px"><a class="brand" href="https://clazaridis.com">c.lazaridis<span>.research</span></a>
+<div class="toplinks"><a href="https://clazaridis.com">Home</a><a href="thesis-report.html">Report</a><a href="thesis-dashboard.html" aria-current="page">Dashboard</a></div></div></div>
+<div class="wrap">
+<header class="hero">
+<p class="eyebrow">MSc dissertation · interactive results</p>
+<h1>The Emergence of Internal Representations in Sequence Models</h1>
+<p class="sub">Transformer vs Mamba · autoregressive vs JEPA-like · Othello at 8×8, 12×12 and 16×16</p>
+<p class="meta">Charalampos Lazaridis Patsalias · MSc Artificial Intelligence · <a href="thesis-report.html">read the full results report</a></p>
+</header>
+<div class="bar">
+  <div class="filters" id="filters"></div>
+  <p class="enc">Colour = architecture (blue Transformer, amber Mamba) · hollow, hatched or dashed = JEPA</p>
+  <div class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" data-tab="overview">Overview</button>
+    <button role="tab" data-tab="behaviour">Behaviour</button>
+    <button role="tab" data-tab="repr">Board decoding</button>
+    <button role="tab" data-tab="causal">Causal use</button>
+    <button role="tab" data-tab="seeds">Five seeds</button>
+    <button role="tab" data-tab="scale">Scale</button>
+    <button role="tab" data-tab="dev">JEPA development</button>
+  </div>
+</div>
+<div id="panel" role="tabpanel" aria-live="polite"></div>
+<footer>All values come from the tables of the thesis (English edition, October 2026): seed 42 and the final test split unless stated,
+five independent seeds for the effects at 8×8 and 16×16, and earlier protocols for the JEPA development runs. Hover over any mark for exact values;
+click a table header to sort. Data are embedded in this page; web fonts and the background artwork load from the web.</footer>
+</div>
+<div id="tip" role="tooltip"></div>
+<script>const D = {"systems":["T-AR","T-JEPA","M-AR","M-JEPA"],"boards":[8,12,16],"legality":{"8":{"T-AR":{"head":"Native","top1":99.726,"top1_ci":[99.717,99.734],"mass":98.477,"mass_ci":[98.465,98.49]},"T-JEPA":{"head":"Linear","top1":99.416,"top1_ci":[99.404,99.428],"mass":97.763,"mass_ci":[97.752,97.774]},"M-AR":{"head":"Native","top1":99.847,"top1_ci":[99.841,99.853],"mass":99.345,"mass_ci":[99.335,99.354]},"M-JEPA":{"head":"MLP","top1":99.719,"top1_ci":[99.71,99.728],"mass":98.904,"mass_ci":[98.894,98.914]}},"12":{"T-AR":{"head":"Native","top1":99.416,"top1_ci":[99.408,99.423],"mass":93.135,"mass_ci":[93.124,93.147]},"T-JEPA":{"head":"Linear","top1":98.524,"top1_ci":[98.511,98.537],"mass":93.302,"mass_ci":[93.292,93.313]},"M-AR":{"head":"Native","top1":99.512,"top1_ci":[99.505,99.519],"mass":95.412,"mass_ci":[95.403,95.422]},"M-JEPA":{"head":"Linear","top1":98.993,"top1_ci":[98.981,99.004],"mass":95.472,"mass_ci":[95.463,95.481]}},"16":{"T-AR":{"head":"Native","top1":98.991,"top1_ci":[98.983,98.999],"mass":88.787,"mass_ci":[88.776,88.798]},"T-JEPA":{"head":"Linear","top1":97.539,"top1_ci":[97.526,97.553],"mass":87.934,"mass_ci":[87.923,87.946]},"M-AR":{"head":"Native","top1":99.049,"top1_ci":[99.041,99.058],"mass":90.739,"mass_ci":[90.729,90.75]},"M-JEPA":{"head":"Linear","top1":98.413,"top1_ci":[98.403,98.424],"mass":90.425,"mass_ci":[90.415,90.434]}}},"patk":{"8":{"T-AR":[99.72,98.28,96.78,92.45],"T-JEPA":[99.42,98.01,96.55,92.26],"M-AR":[99.84,98.39,96.9,92.57],"M-JEPA":[99.72,98.29,96.8,92.49]},"12":{"T-AR":[99.42,98.76,98.12,96.34],"T-JEPA":[98.52,97.89,97.27,95.54],"M-AR":[99.51,98.89,98.27,96.53],"M-JEPA":[98.99,98.39,97.81,96.13]},"16":{"T-AR":[98.99,98.55,98.12,97.01],"T-JEPA":[97.54,96.99,96.49,95.3],"M-AR":[99.05,98.64,98.24,97.17],"M-JEPA":[98.41,97.98,97.58,96.55]}},"phase":{"8":{"T-AR":[99.99,99.86,99.66,99.4],"T-JEPA":[99.99,99.71,99.2,98.78],"M-AR":[100.0,99.96,99.81,99.63],"M-JEPA":[100.0,99.93,99.66,99.3]},"12":{"T-AR":[99.71,99.32,99.31,99.32],"T-JEPA":[99.46,98.46,98.21,97.97],"M-AR":[99.89,99.45,99.39,99.32],"M-JEPA":[99.79,98.91,98.73,98.54]},"16":{"T-AR":[99.28,98.77,98.9,99.0],"T-JEPA":[98.33,96.99,97.33,97.49],"M-AR":[99.53,98.95,98.87,98.84],"M-JEPA":[99.18,98.26,98.15,98.05]}},"rel":{"8":{"T-AR":{"lin_overall":97.59,"lin_macro":96.91,"lin_L":6,"mlp_overall":97.38,"mlp_macro":96.61,"mlp_L":6},"T-JEPA":{"lin_overall":97.45,"lin_macro":96.72,"lin_L":6,"mlp_overall":97.22,"mlp_macro":96.41,"mlp_L":6},"M-AR":{"lin_overall":98.32,"lin_macro":97.85,"lin_L":12,"mlp_overall":98.16,"mlp_macro":97.62,"mlp_L":12},"M-JEPA":{"lin_overall":98.48,"lin_macro":98.04,"lin_L":13,"mlp_overall":98.3,"mlp_macro":97.82,"mlp_L":12}},"12":{"T-AR":{"lin_overall":91.74,"lin_macro":89.17,"lin_L":7,"mlp_overall":90.86,"mlp_macro":88.01,"mlp_L":7},"T-JEPA":{"lin_overall":91.21,"lin_macro":88.48,"lin_L":6,"mlp_overall":90.38,"mlp_macro":87.4,"mlp_L":6},"M-AR":{"lin_overall":93.41,"lin_macro":91.37,"lin_L":12,"mlp_overall":92.42,"mlp_macro":90.06,"mlp_L":12},"M-JEPA":{"lin_overall":94.54,"lin_macro":92.85,"lin_L":12,"mlp_overall":93.77,"mlp_macro":91.85,"mlp_L":12}},"16":{"T-AR":{"lin_overall":87.02,"lin_macro":82.88,"lin_L":8,"mlp_overall":85.16,"mlp_macro":80.49,"mlp_L":7},"T-JEPA":{"lin_overall":83.49,"lin_macro":78.37,"lin_L":7,"mlp_overall":81.56,"mlp_macro":75.99,"mlp_L":7},"M-AR":{"lin_overall":87.37,"lin_macro":83.35,"lin_L":11,"mlp_overall":85.8,"mlp_macro":81.41,"mlp_L":11},"M-JEPA":{"lin_overall":87.56,"lin_macro":83.77,"lin_L":12,"mlp_overall":85.58,"mlp_macro":81.26,"mlp_L":13}}},"abs":{"8":{"T-AR":{"lin_overall":75.57,"lin_macro":68.88,"lin_L":3,"mlp_overall":95.2,"mlp_macro":93.88,"mlp_L":5},"T-JEPA":{"lin_overall":75.69,"lin_macro":69.02,"lin_L":4,"mlp_overall":95.94,"mlp_macro":94.83,"mlp_L":5},"M-AR":{"lin_overall":75.5,"lin_macro":68.78,"lin_L":11,"mlp_overall":89.43,"mlp_macro":86.55,"mlp_L":10},"M-JEPA":{"lin_overall":75.6,"lin_macro":68.92,"lin_L":12,"mlp_overall":91.41,"mlp_macro":89.31,"mlp_L":9}},"12":{"T-AR":{"lin_overall":74.96,"lin_macro":67.3,"lin_L":5,"mlp_overall":79.0,"mlp_macro":72.59,"mlp_L":5},"T-JEPA":{"lin_overall":74.9,"lin_macro":67.23,"lin_L":5,"mlp_overall":81.49,"mlp_macro":75.84,"mlp_L":6},"M-AR":{"lin_overall":74.55,"lin_macro":66.77,"lin_L":10,"mlp_overall":74.48,"mlp_macro":66.68,"mlp_L":11},"M-JEPA":{"lin_overall":74.78,"lin_macro":67.07,"lin_L":12,"mlp_overall":75.24,"mlp_macro":67.79,"mlp_L":9}},"16":{"T-AR":{"lin_overall":74.79,"lin_macro":66.81,"lin_L":5,"mlp_overall":74.94,"mlp_macro":67.03,"mlp_L":7},"T-JEPA":{"lin_overall":74.36,"lin_macro":66.26,"lin_L":6,"mlp_overall":73.82,"mlp_macro":65.7,"mlp_L":7},"M-AR":{"lin_overall":74.62,"lin_macro":66.58,"lin_L":11,"mlp_overall":74.33,"mlp_macro":66.26,"mlp_L":11},"M-JEPA":{"lin_overall":74.28,"lin_macro":66.18,"lin_L":13,"mlp_overall":73.82,"mlp_macro":65.66,"mlp_L":13}}},"perclass":{"8":{"T-AR":{"empty":99.99,"mine":94.91,"opp":95.85,"occ":95.41},"T-JEPA":{"empty":99.99,"mine":94.4,"opp":95.78,"occ":95.15},"M-AR":{"empty":99.99,"mine":96.39,"opp":97.16,"occ":96.81},"M-JEPA":{"empty":99.97,"mine":96.51,"opp":97.64,"occ":97.12}},"12":{"T-AR":{"empty":99.98,"mine":82.23,"opp":85.29,"occ":83.83},"T-JEPA":{"empty":99.97,"mine":80.96,"opp":84.5,"occ":82.81},"M-AR":{"empty":99.97,"mine":85.77,"opp":88.36,"occ":87.13},"M-JEPA":{"empty":99.98,"mine":88.49,"opp":90.09,"occ":89.33}},"16":{"T-AR":{"empty":99.97,"mine":72.22,"opp":76.45,"occ":74.39},"T-JEPA":{"empty":99.46,"mine":65.16,"opp":70.5,"occ":67.91},"M-AR":{"empty":99.95,"mine":73.21,"opp":76.89,"occ":75.1},"M-JEPA":{"empty":99.37,"mine":73.45,"opp":78.48,"occ":76.04}}},"layer":{"8":{"T-AR":{"sel":"6/8","reldepth":0.75,"sel_macro":96.91,"final_macro":96.82,"final_overall":97.51},"T-JEPA":{"sel":"6/8","reldepth":0.75,"sel_macro":96.72,"final_macro":95.72,"final_overall":96.6},"M-AR":{"sel":"12/15","reldepth":0.8,"sel_macro":97.85,"final_macro":96.86,"final_overall":97.5},"M-JEPA":{"sel":"13/15","reldepth":0.867,"sel_macro":98.04,"final_macro":95.7,"final_overall":96.54}},"12":{"T-AR":{"sel":"7/8","reldepth":0.875,"sel_macro":89.17,"final_macro":89.16,"final_overall":91.73},"T-JEPA":{"sel":"6/8","reldepth":0.75,"sel_macro":88.48,"final_macro":87.44,"final_overall":90.25},"M-AR":{"sel":"12/15","reldepth":0.8,"sel_macro":91.37,"final_macro":91.09,"final_overall":93.19},"M-JEPA":{"sel":"12/15","reldepth":0.8,"sel_macro":92.85,"final_macro":91.01,"final_overall":93.03}},"16":{"T-AR":{"sel":"8/8","reldepth":1.0,"sel_macro":82.88,"final_macro":82.88,"final_overall":87.02},"T-JEPA":{"sel":"7/8","reldepth":0.875,"sel_macro":78.37,"final_macro":77.21,"final_overall":82.47},"M-AR":{"sel":"11/15","reldepth":0.733,"sel_macro":83.35,"final_macro":82.93,"final_overall":87.06},"M-JEPA":{"sel":"12/15","reldepth":0.8,"sel_macro":83.77,"final_macro":81.75,"final_overall":85.96}}},"lift":{"8":{"T-AR":{"base":14.13,"top1":99.73,"lift":99.68},"T-JEPA":{"base":14.13,"top1":99.42,"lift":99.32},"M-AR":{"base":14.13,"top1":99.85,"lift":99.82},"M-JEPA":{"base":14.13,"top1":99.72,"lift":99.67}},"12":{"T-AR":{"base":11.86,"top1":99.42,"lift":99.34},"T-JEPA":{"base":11.86,"top1":98.52,"lift":98.32},"M-AR":{"base":11.86,"top1":99.51,"lift":99.45},"M-JEPA":{"base":11.86,"top1":98.99,"lift":98.86}},"16":{"T-AR":{"base":10.29,"top1":98.99,"lift":98.87},"T-JEPA":{"base":10.29,"top1":97.54,"lift":97.26},"M-AR":{"base":10.29,"top1":99.05,"lift":98.94},"M-JEPA":{"base":10.29,"top1":98.41,"lift":98.23}}},"seeds":{"8":{"T-AR":{"top1":[99.71,0.01],"rel":[96.95,0.07]},"T-JEPA":{"top1":[99.42,0.01],"rel":[96.62,0.24]},"M-AR":{"top1":[99.84,0.01],"rel":[97.92,0.14]},"M-JEPA":{"top1":[99.72,0.0],"rel":[98.17,0.08]}},"16":{"T-AR":{"top1":[98.99,0.02],"rel":[82.96,0.08]},"T-JEPA":{"top1":[97.53,0.06],"rel":[78.34,0.33]},"M-AR":{"top1":[99.03,0.05],"rel":[83.43,0.43]},"M-JEPA":{"top1":[98.46,0.08],"rel":[83.89,0.13]}}},"effects":[{"board":8,"metric":"Top-1 legality","effect":"Architecture","diff":0.21,"ci":[0.21,0.22],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":45.07},{"board":8,"metric":"Top-1 legality","effect":"Objective","diff":-0.2,"ci":[-0.22,-0.19],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"0/0/5","gz":-14.43},{"board":8,"metric":"Top-1 legality","effect":"Interaction","diff":0.18,"ci":[0.15,0.21],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":6.62},{"board":8,"metric":"Legal mass","effect":"Architecture","diff":1.07,"ci":[0.95,1.19],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":9.07},{"board":8,"metric":"Legal mass","effect":"Objective","diff":-0.54,"ci":[-0.59,-0.48],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"0/0/5","gz":-9.71},{"board":8,"metric":"Legal mass","effect":"Interaction","diff":0.28,"ci":[0.22,0.35],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":4.27},{"board":8,"metric":"Relative state","effect":"Architecture","diff":1.26,"ci":[1.1,1.42],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":7.88},{"board":8,"metric":"Relative state","effect":"Objective","diff":-0.04,"ci":[-0.18,0.1],"p_t":"0.474","p_holm":"0.474","p_exact":"0.5000","signs":"2/0/3","gz":-0.28},{"board":8,"metric":"Relative state","effect":"Interaction","diff":0.59,"ci":[0.14,1.04],"p_t":"0.021","p_holm":"0.043","p_exact":"0.0625","signs":"5/0/0","gz":1.31},{"board":16,"metric":"Top-1 legality","effect":"Architecture","diff":0.48,"ci":[0.39,0.57],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":5.48},{"board":16,"metric":"Top-1 legality","effect":"Objective","diff":-1.02,"ci":[-1.07,-0.96],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"0/0/5","gz":-17.85},{"board":16,"metric":"Top-1 legality","effect":"Interaction","diff":0.89,"ci":[0.71,1.07],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":4.93},{"board":16,"metric":"Legal mass","effect":"Architecture","diff":2.32,"ci":[2.02,2.62],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":7.65},{"board":16,"metric":"Legal mass","effect":"Objective","diff":-0.56,"ci":[-0.77,-0.35],"p_t":"0.002","p_holm":"0.004","p_exact":"0.0625","signs":"0/0/5","gz":-2.61},{"board":16,"metric":"Legal mass","effect":"Interaction","diff":0.98,"ci":[0.5,1.45],"p_t":"0.005","p_holm":"0.005","p_exact":"0.0625","signs":"5/0/0","gz":2.05},{"board":16,"metric":"Relative state","effect":"Architecture","diff":3.01,"ci":[2.89,3.13],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":24.62},{"board":16,"metric":"Relative state","effect":"Objective","diff":-2.08,"ci":[-2.32,-1.85],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"0/0/5","gz":-8.73},{"board":16,"metric":"Relative state","effect":"Interaction","diff":5.09,"ci":[4.23,5.95],"p_t":"<0.001","p_holm":"<0.001","p_exact":"0.0625","signs":"5/0/0","gz":5.87}],"int_mass":{"8":{"T-AR":[2.29,0.39,6.37,6.51],"T-JEPA":[2.3,0.57,5.97,7.28],"M-AR":[0.01,0.01,6.35,7.12],"M-JEPA":[0.1,0.01,6.05,6.72]},"12":{"T-AR":[-0.49,0.39,2.72,3.29],"T-JEPA":[-1.69,0.7,2.19,2.77],"M-AR":[0.23,0.01,2.71,3.47],"M-JEPA":[0.05,0.03,2.55,3.18]},"16":{"T-AR":[0.11,0.07,1.06,1.22],"T-JEPA":[0.49,0.11,0.78,1.41],"M-AR":[0.57,0.01,1.48,1.73],"M-JEPA":[-0.08,0.01,0.81,1.95]}},"int_top1":{"8":{"T-AR":[5.4,1.2,6.7,7.2],"T-JEPA":[4.8,1.4,6.5,7.5],"M-AR":[0.7,0.2,6.4,8.6],"M-JEPA":[1.1,0.1,7.9,6.4]},"12":{"T-AR":[-1.0,0.9,2.7,4.2],"T-JEPA":[0.2,1.2,3.2,3.4],"M-AR":[0.9,0.4,3.5,4.8],"M-JEPA":[1.6,0.2,4.7,4.8]},"16":{"T-AR":[-0.9,2.4,3.0,2.8],"T-JEPA":[-0.1,-0.3,-0.1,0.4],"M-AR":[0.4,0.4,2.6,5.1],"M-JEPA":[-0.3,0.1,1.3,2.1]}},"int_fpfn":{"8":{"T-AR":[-0.93,-0.51,-1.86,-1.9],"T-JEPA":[-0.69,-0.32,-2.12,-2.11],"M-AR":[-0.14,-0.02,-2.03,-2.08],"M-JEPA":[-0.07,-0.01,-2.17,-2.1]},"12":{"T-AR":[2.67,-0.63,-1.24,-1.59],"T-JEPA":[3.14,-0.69,-1.25,-1.32],"M-AR":[0.02,-0.02,-1.5,-1.82],"M-JEPA":[0.01,-0.02,-1.63,-1.73]},"16":{"T-AR":[5.05,-0.43,-0.57,-0.89],"T-JEPA":[4.67,-0.24,-0.45,-0.9],"M-AR":[0.16,-0.01,-0.81,-1.26],"M-JEPA":[0.15,-0.04,-0.8,-1.47]}},"head_alpha":{"8":{"T-AR":{"head":"Native","alpha":2},"T-JEPA":{"head":"Linear","alpha":4},"M-AR":{"head":"Native","alpha":4},"M-JEPA":{"head":"MLP","alpha":4}},"12":{"T-AR":{"head":"Native","alpha":2},"T-JEPA":{"head":"Linear","alpha":2},"M-AR":{"head":"Native","alpha":2},"M-JEPA":{"head":"Linear","alpha":2}},"16":{"T-AR":{"head":"Native","alpha":1},"T-JEPA":{"head":"Linear","alpha":2},"M-AR":{"head":"Native","alpha":1},"M-JEPA":{"head":"Linear","alpha":2}}},"dev_early":[{"v":"v1","top1":25.71,"traj":"62.41% → 62.41% (L0) → 49.29%","note":"Decodability decreases with depth"},{"v":"v2","top1":38.6,"traj":"60.91% → 62.00% (L6) → 61.93%","note":"More stable but weak representation"},{"v":"v3","top1":27.24,"traj":"59.73% → 59.73% (L0) → 57.61%","note":"K=8 and the smaller predictor did not help"},{"v":"v4","top1":33.55,"traj":"60.54% → 62.67% (L1) → 59.36%","note":"The target still saw the history"},{"v":"v5 exploratory","top1":39.58,"traj":"61.96% → 63.01% (L5) → 62.39%","note":"InfoNCE alone was not enough"},{"v":"v6 preliminary","top1":55.88,"traj":"60.72% → 60.72% (L0) → 58.66%","note":"Top-1 improved, the representation did not"}],"dev_T":[{"cfg":"v1 nested VICReg","top1":25.43,"macro":58.35,"overall":65.09,"layer":"L0"},{"cfg":"v1 HD VICReg","top1":98.99,"macro":90.17,"overall":92.33,"layer":"L2"},{"cfg":"v1 HD VICReg + EMA","top1":99.38,"macro":92.89,"overall":94.45,"layer":"L3"},{"cfg":"v2 HD Smooth L1, K=4","top1":98.87,"macro":88.24,"overall":90.81,"layer":"L2"},{"cfg":"v3 HD Smooth L1, K=8","top1":96.48,"macro":87.69,"overall":90.4,"layer":"L6"},{"cfg":"v4 HD Smooth L1, K=4","top1":97.48,"macro":89.43,"overall":91.76,"layer":"L3"},{"cfg":"Final HD InfoNCE","top1":99.42,"macro":96.2,"overall":97.04,"layer":"L6"},{"cfg":"v6 HD distance-margin","top1":60.62,"macro":59.64,"overall":66.75,"layer":"L7"}],"dev_M":[{"cfg":"v1 HD VICReg; single position","top1":94.26,"macro":null,"overall":84.37,"layer":"L7; validation"},{"cfg":"v1 HD VICReg; all-position","top1":99.47,"macro":94.97,"overall":96.07,"layer":"L7; test"},{"cfg":"v1 HD VICReg + EMA; all-position","top1":99.72,"macro":96.3,"overall":97.13,"layer":"L7; test"},{"cfg":"Final HD InfoNCE; all-position","top1":99.72,"macro":97.65,"overall":98.17,"layer":"L12; test"}],"dev_cfg":[{"v":"v1","view":"Nested; shared context/target history","loss":"VICReg","pred":"Linear, K=1","q":"Baseline and collapse check"},{"v":"v2","view":"Nested; EMA target","loss":"Smooth L1","pred":"Transformer, K=4","q":"Stabilising the target"},{"v":"v3","view":"Nested; EMA target","loss":"Smooth L1","pred":"Small MLP, K=8","q":"Weaker predictor and longer horizon"},{"v":"v4","view":"disjoint_future; the target keeps the history","loss":"Smooth L1","pred":"Multi-position MLP, K=4","q":"Predicting four future representations"},{"v":"v5 exploratory","view":"disjoint_future and prefix-grouped hard-disjoint branches","loss":"InfoNCE","pred":"MLP, K=1","q":"Contrastive discrimination; not the final implementation"},{"v":"v6","view":"Hard-disjoint next action token","loss":"Distance-margin","pred":"MLP, 10 modes","q":"Multiple candidate representations"},{"v":"Final InfoNCE","view":"Hard-disjoint next token; EMA","loss":"InfoNCE per absolute position","pred":"Linear, K=1","q":"All-position canonical objective"}],"params":{"8":{"T":25312768,"M":25529856,"excess":"0.858%"},"12":{"T":25435648,"M":25652736,"excess":"0.854%"},"16":{"T":25607680,"M":25824768,"excess":"0.848%"}}};
+/* Thesis dashboard: all data embedded in D (from the thesis tables).
+   Filters: any non-empty subset of board sizes and of the four systems. */
+const SYS=['T-AR','T-JEPA','M-AR','M-JEPA'];
+const NAME={'T-AR':'Transformer-AR','T-JEPA':'Transformer-JEPA','M-AR':'Mamba-AR','M-JEPA':'Mamba-JEPA'};
+const ARCH={'T-AR':'t','T-JEPA':'t','M-AR':'m','M-JEPA':'m'};
+const JEPA={'T-AR':false,'T-JEPA':true,'M-AR':false,'M-JEPA':true};
+const BL={'8':'8×8','12':'12×12','16':'16×16'};
+const B=['8','12','16'];
+const S={boards:['8'],sys:SYS.slice(),tab:'overview',enc:'rel',probe:'lin',pm:'lin_macro',cm:'int_mass',cmp:'unmod',sm:'Relative state',scm:'dec',dm:'top1',sort:{}};
+const selB=()=>B.filter(b=>S.boards.includes(b));
+const selS=()=>SYS.filter(k=>S.sys.includes(k));
+const pairs=(bs=selB())=>bs.flatMap(b=>selS().map(k=>({b,k})));
+const bList=bs=>bs.map(b=>BL[b]).join(', ');
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const f=(x,d=2)=>x==null?'–':x.toFixed(d);
+const sg=(x,d=2)=>x==null?'–':(x>0?'+':'')+x.toFixed(d).replace('-','−');
+const W=560;
+const ticks=(a,b,st)=>{const o=[];for(let v=a;v<=b+1e-9;v+=st)o.push(+v.toFixed(6));return o};
+function niceAxis(vals,pad=.06,target=6){let lo=Math.min(...vals),hi=Math.max(...vals);const span=Math.max(hi-lo,1e-6);lo-=span*pad;hi+=span*pad;
+  for(const st of [.05,.1,.2,.25,.5,1,2,2.5,5,10,20,25,50]){const a=Math.floor(lo/st)*st,b=Math.ceil(hi/st)*st;if((b-a)/st<=target)return[+a.toFixed(4),+b.toFixed(4),st]}return[lo,hi,(hi-lo)/5]}
+const tdOf=st=>Math.abs(st-Math.round(st))<1e-9?0:Math.abs(st*10-Math.round(st*10))<1e-9?1:2;
+function mk(s,cx,cy,r,tip){const c=`var(--${ARCH[s]})`,t=tip?` data-tip="${esc(tip)}"`:'';
+  return JEPA[s]?`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r-1}" fill="var(--card)" stroke="${c}" stroke-width="2.4"${t}/>`
+                :`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${c}" stroke="var(--card)" stroke-width="2"${t}/>`}
+function swatch(k){const c=`var(--${ARCH[k]})`;
+  return JEPA[k]?`<svg width="26" height="12" aria-hidden="true"><line x1="1" y1="6" x2="25" y2="6" stroke="${c}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="13" cy="6" r="4" fill="var(--card)" stroke="${c}" stroke-width="2"/></svg>`
+                :`<svg width="26" height="12" aria-hidden="true"><line x1="1" y1="6" x2="25" y2="6" stroke="${c}" stroke-width="2"/><circle cx="13" cy="6" r="4.5" fill="${c}"/></svg>`}
+function legendSys(){return '<div class="legend">'+selS().map(k=>`<span class="k">${swatch(k)}${NAME[k]}</span>`).join('')+'</div>'}
+function legendDots(p){return '<div class="legend">'+p.map(([n,c])=>`<span class="k"><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="${c}"/></svg>${esc(n)}</span>`).join('')+'</div>'}
+
+/* ---------- row layout shared by the row charts ----------
+   rows = [{b,k}], grouped by board; a board header line is drawn when more than one board is shown. */
+function layoutRows(rows,rh,top){const multi=new Set(rows.map(r=>r.b)).size>1, gh=multi?22:0;let y=top,prev=null;const out=[];
+  rows.forEach(r=>{let head=null;if(r.b!==prev){if(multi){head=y;y+=gh}prev=r.b}out.push({...r,y0:y,head});y+=rh});return{items:out,end:y}}
+function groupHeads(items,W){let s='';items.forEach((it,i)=>{if(it.head!=null){
+  if(i) s+=`<line class="axis" x1="0" y1="${it.head+2}" x2="${W}" y2="${it.head+2}" stroke-dasharray="2 3"/>`;
+  s+=`<text class="grp" x="4" y="${it.head+16}">${BL[it.b]}</text>`}});return s}
+
+/* ---------- charts ---------- */
+// horizontal bars per (board, system); JEPA bars hatched; reference lines optional
+function rowBars(rows,get,o){const rh=36,th=20,top=22,gutter=150,right=60,pw=W-gutter-right;
+  const {items,end}=layoutRows(rows,rh,top),H=end+40;
+  const X=v=>gutter+(v-o.min)/(o.max-o.min)*pw, x0=X(Math.max(o.min,Math.min(o.max,o.base??o.min)));
+  let s=`<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title)}">`;
+  for(const t of ticks(o.min,o.max,o.step)) s+=`<line class="grid" x1="${X(t)}" y1="${top}" x2="${X(t)}" y2="${H-36}"/><text class="tick" x="${X(t)}" y="${H-20}" text-anchor="middle">${f(t,o.td??0)}</text>`;
+  s+=`<text class="tick" x="${gutter+pw/2}" y="${H-3}" text-anchor="middle">${esc(o.xl)}</text>`;
+  for(const [rv,rl] of (o.refs||[])) if(rv>=o.min&&rv<=o.max) s+=`<line class="ref" x1="${X(rv)}" y1="${top}" x2="${X(rv)}" y2="${H-36}"/><text class="reflab" x="${X(rv)}" y="${top-7}" text-anchor="middle">${esc(rl)}</text>`;
+  s+=groupHeads(items,W);
+  items.forEach(({b,k,y0})=>{const v=get(b,k),y=y0+(rh-th)/2,xv=X(Math.max(o.min,Math.min(o.max,v))),a=Math.min(x0,xv),w=Math.max(Math.abs(xv-x0),2),c=`var(--${ARCH[k]})`;
+    s+=`<text class="rowlab" x="${gutter-10}" y="${y+th-5}" text-anchor="end">${NAME[k]}</text>`;
+    s+=JEPA[k]?`<rect x="${a}" y="${y}" width="${w}" height="${th}" rx="3" fill="url(#hatch-${ARCH[k]})" stroke="${c}" stroke-width="1.5"/>`:`<rect x="${a}" y="${y}" width="${w}" height="${th}" rx="3" fill="${c}"/>`;
+    s+=`<text class="val" x="${a+w+7}" y="${y+th-5}">${f(v,o.d??2)}</text>`;
+    s+=`<rect class="hit" x="0" y="${y0}" width="${W}" height="${rh}" data-tip="${esc(o.tipf?o.tipf(b,k,v):BL[b]+' · '+NAME[k]+'\n'+f(v,o.d??2))}"/>`;});
+  return s+`<line class="axis" x1="${x0}" y1="${top}" x2="${x0}" y2="${H-36}"/></svg>`}
+
+// grouped horizontal bars: rows = (board, system), bars = series [{key,label,color}]; diverging from 0
+function rowGroupBars(rows,get,series,o){const gh=15,gap=3,rp=14,top=8,gutter=150,right=64,rh=series.length*(gh+gap)+rp,pw=W-gutter-right;
+  const {items,end}=layoutRows(rows,rh,top),H=end+40,X=v=>gutter+(v-o.min)/(o.max-o.min)*pw,x0=X(o.base??0);
+  const fmt=v=>o.unsigned?f(v,o.d??2):sg(v,o.d??2);
+  let s=`<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title)}">`;
+  for(const t of ticks(o.min,o.max,o.step)) s+=`<line class="${Math.abs(t)<1e-9&&!o.unsigned?'axis':'grid'}" x1="${X(t)}" y1="${top}" x2="${X(t)}" y2="${H-36}"/><text class="tick" x="${X(t)}" y="${H-20}" text-anchor="middle">${o.unsigned?f(t,o.td??0):sg(t,o.td??0)}</text>`;
+  s+=`<text class="tick" x="${gutter+pw/2}" y="${H-3}" text-anchor="middle">${esc(o.xl)}</text>`;
+  s+=groupHeads(items,W);
+  items.forEach(({b,k,y0},i)=>{const vals=get(b,k);
+    s+=`<text class="rowlab" x="${gutter-10}" y="${y0+(rh-rp)/2+5}" text-anchor="end">${NAME[k]}</text>`;
+    if(i&&items[i].head==null) s+=`<line class="grid" x1="0" y1="${y0-rp/2+2}" x2="${W}" y2="${y0-rp/2+2}"/>`;
+    series.forEach((sr,j)=>{const v=vals[sr.key],y=y0+j*(gh+gap),xv=X(Math.max(o.min,Math.min(o.max,v))),a=Math.min(x0,xv),w=Math.max(Math.abs(xv-x0),2);
+      s+=`<rect x="${a}" y="${y}" width="${w}" height="${gh}" rx="3" fill="var(--${sr.color})"/>`;
+      s+=`<text class="val" x="${v>=(o.base??0)?a+w+6:a-6}" y="${y+gh-3}" text-anchor="${v>=(o.base??0)?'start':'end'}" font-size="11.5">${fmt(v)}</text>`;});
+    s+=`<rect class="hit" x="0" y="${y0-rp/2+2}" width="${W}" height="${rh}" data-tip="${esc(BL[b]+' · '+NAME[k]+'\n'+series.map(sr=>`${sr.label}: ${fmt(vals[sr.key])}`).join('\n')+(o.extra?o.extra(b,k):''))}"/>`;});
+  return s+'</svg>'}
+
+// value with interval per (board, system)
+function rowDotCI(rows,get,o){const rh=32,top=8,gutter=150,right=24,pw=W-gutter-right;
+  const {items,end}=layoutRows(rows,rh,top),H=end+40,X=v=>gutter+(v-o.min)/(o.max-o.min)*pw;
+  let s=`<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title)}">`;
+  for(const t of ticks(o.min,o.max,o.step)) s+=`<line class="grid" x1="${X(t)}" y1="${top}" x2="${X(t)}" y2="${H-36}"/><text class="tick" x="${X(t)}" y="${H-20}" text-anchor="middle">${f(t,o.td??1)}</text>`;
+  s+=`<text class="tick" x="${gutter+pw/2}" y="${H-3}" text-anchor="middle">${esc(o.xl)}</text>`;
+  s+=groupHeads(items,W);
+  items.forEach(({b,k,y0})=>{const [v,lo,hi]=get(b,k),y=y0+rh/2,c=`var(--${ARCH[k]})`;
+    s+=`<text class="rowlab" x="${gutter-10}" y="${y+4}" text-anchor="end">${NAME[k]}</text>`;
+    s+=`<line x1="${X(lo)}" y1="${y}" x2="${X(hi)}" y2="${y}" stroke="${c}" stroke-width="2"/><line x1="${X(lo)}" y1="${y-5}" x2="${X(lo)}" y2="${y+5}" stroke="${c}" stroke-width="2"/><line x1="${X(hi)}" y1="${y-5}" x2="${X(hi)}" y2="${y+5}" stroke="${c}" stroke-width="2"/>`;
+    s+=mk(k,X(v),y,6,'')+`<rect class="hit" x="0" y="${y0}" width="${W}" height="${rh}" data-tip="${esc(o.tipf(b,k,v,lo,hi))}"/>`;});
+  return s+'</svg>'}
+
+// lines across categories for the selected systems; colour = architecture, dashed = JEPA
+function lineChart(series,cats,o){const ks=selS(),H=o.H||290,l=52,r=140,t=12,b=44,pw=W-l-r,ph=H-t-b;
+  const X=i=>l+pw*(i+.5)/cats.length, Y=v=>t+ph*(1-(v-o.min)/(o.max-o.min)), fmt=v=>o.signed?sg(v,o.d??2):f(v,o.d??2);
+  let s=`<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title)}">`;
+  for(const v of ticks(o.min,o.max,o.step)) s+=`<line class="grid" x1="${l}" y1="${Y(v)}" x2="${W-r}" y2="${Y(v)}"/><text class="tick" x="${l-8}" y="${Y(v)+4}" text-anchor="end">${o.signed?sg(v,o.td??0):f(v,o.td??0)}</text>`;
+  s+=`<line class="axis" x1="${l}" y1="${t+ph}" x2="${W-r}" y2="${t+ph}"/>`;
+  cats.forEach((c,i)=>s+=`<text class="tick" x="${X(i)}" y="${t+ph+18}" text-anchor="middle">${esc(c)}</text>`);
+  s+=`<text class="tick" x="${l+pw/2}" y="${H-6}" text-anchor="middle">${esc(o.xl||'Board size')}</text>`;
+  if(o.yl) s+=`<text class="tick" transform="translate(12 ${t+ph/2}) rotate(-90)" text-anchor="middle">${esc(o.yl)}</text>`;
+  for(const [rv,rl] of (o.refs||[])) if(rv>=o.min&&rv<=o.max) s+=`<line class="ref" x1="${l}" y1="${Y(rv)}" x2="${W-r}" y2="${Y(rv)}"/><text class="reflab" x="${l+6}" y="${Y(rv)-5}">${esc(rl)}</text>`;
+  cats.forEach((c,i)=>{s+=`<rect class="hit" x="${X(i)-pw/cats.length/2}" y="${t}" width="${pw/cats.length}" height="${ph}" data-tip="${esc(c+'\n'+ks.map(k=>`${NAME[k]}: ${fmt(series[k][i])}`).join('\n'))}"/>`;});
+  for(const k of ks) if(cats.length>1) s+=`<path class="ln" stroke="var(--${ARCH[k]})"${JEPA[k]?' stroke-dasharray="6 5"':''} d="M${series[k].map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join('L')}" pointer-events="none"/>`;
+  for(const k of ks) series[k].forEach((v,i)=>s+=mk(k,X(i),Y(v),5,`${cats[i]} · ${NAME[k]}\n${fmt(v)}`));
+  const last=cats.length-1,ends=ks.map(k=>[Y(series[k][last]),k]).sort((a,b)=>a[0]-b[0]);let prev=-1e9;
+  for(const [y,k] of ends){const yy=Math.max(y,prev+14);prev=yy;s+=`<text class="val" x="${X(last)+11}" y="${yy+4}" font-size="11.5">${NAME[k]} ${fmt(series[k][last])}</text>`}
+  return s+'</svg>'}
+
+// three matched effects for one metric at one board
+function effects(rows,o){const rh=44,top=14,gutter=150,right=30,H=top+rh*rows.length+40,pw=W-gutter-right,X=v=>gutter+(v-o.min)/(o.max-o.min)*pw;
+  let s=`<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title)}">`;
+  for(const t of ticks(o.min,o.max,o.step)) s+=`<line class="${Math.abs(t)<1e-9?'axis':'grid'}" x1="${X(t)}" y1="${top}" x2="${X(t)}" y2="${H-36}"/><text class="tick" x="${X(t)}" y="${H-20}" text-anchor="middle">${t?sg(t,o.td??1):'0'}</text>`;
+  s+=`<text class="tick" x="${gutter+pw/2}" y="${H-3}" text-anchor="middle">Matched effect (pp) with 95% t-interval</text>`;
+  rows.forEach((r,i)=>{const y=top+rh*i+rh/2;
+    s+=`<text class="rowlab" x="${gutter-10}" y="${y+4}" text-anchor="end">${esc(r.label)}</text>`;
+    s+=`<line x1="${X(r.lo)}" y1="${y}" x2="${X(r.hi)}" y2="${y}" stroke="var(--ink)" stroke-width="2"/><line x1="${X(r.lo)}" y1="${y-5}" x2="${X(r.lo)}" y2="${y+5}" stroke="var(--ink)" stroke-width="2"/><line x1="${X(r.hi)}" y1="${y-5}" x2="${X(r.hi)}" y2="${y+5}" stroke="var(--ink)" stroke-width="2"/>`;
+    s+=`<path d="M${X(r.diff)},${y-7}L${X(r.diff)+7},${y}L${X(r.diff)},${y+7}L${X(r.diff)-7},${y}Z" fill="var(--gold)" stroke="var(--card)" stroke-width="1.5"/>`;
+    s+=`<text class="val" x="${X(r.diff)}" y="${y-11}" text-anchor="middle" font-size="11.5">${sg(r.diff)}</text>`;
+    s+=`<rect class="hit" x="0" y="${y-rh/2}" width="${W}" height="${rh}" data-tip="${esc(r.tip)}"/>`;});
+  return s+'</svg>'}
+
+// heatmap: rows = (board, system), columns = game phases
+function heat(rows,get,cols,lo,hi){const multi=new Set(rows.map(r=>r.b)).size>1;
+  const bg=v=>`background:rgba(57,135,229,${(0.08+0.62*Math.max(0,Math.min(1,(v-lo)/(hi-lo)))).toFixed(2)})`;let prev=null;
+  return `<div class="heat" style="grid-template-columns:auto repeat(${cols.length},1fr)"><div></div>${cols.map(c=>`<div class="hh">${esc(c)}</div>`).join('')}`+
+    rows.map(({b,k})=>{let h='';if(multi&&b!==prev){h=`<div class="hg" style="grid-column:1/-1">${BL[b]}</div>`;}prev=b;
+      return h+`<div class="hl">${NAME[k]}</div>`+get(b,k).map((v,j)=>`<div class="hc" style="${bg(v)}" data-tip="${esc(BL[b]+' · '+NAME[k]+' · '+cols[j]+'\n'+f(v)+'%')}">${f(v)}</div>`).join('')}).join('')+'</div>'}
+
+/* ---------- tables ---------- */
+function table(id,head,rows,o={}){const st=S.sort[id];let r=rows.slice();
+  if(st){r.sort((a,b)=>{const x=a[st.k],y=b[st.k];return (typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y)))*st.dir})}
+  return `<div class="tw${o.scroll?' scroll':''}"><table data-id="${id}"><thead><tr>${head.map(h=>`<th data-sort="${h.k}"${h.num?' class="num"':''}>${esc(h.label)}${st&&st.k===h.k?(st.dir>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>`+
+   r.map(row=>'<tr>'+head.map(h=>{const v=row[h.k],txt=h.fmt?h.fmt(v,row):v,b=o.best&&o.best(row,h.k);
+     return `<td class="${h.num?'num':''}${h.wrap?' wrapc':''}">${b?'<b class="best">'+txt+'</b>':txt}</td>`}).join('')+'</tr>').join('')+'</tbody></table></div>'}
+// best value of column k within each board group
+function bestByBoard(rows,cols){const m={};rows.forEach(r=>cols.forEach(c=>{const key=r.board+'|'+c;if(r[c]!=null&&(m[key]==null||r[c]>m[key]))m[key]=r[c]}));
+  return (row,c)=>cols.includes(c)&&m[row.board+'|'+c]===row[c]&&selS().length>1}
+
+/* ---------- panels ---------- */
+const kpi=(l,v,d='')=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`;
+const card=(t,sub,body,cls='')=>`<div class="card ${cls}"><h3>${t}</h3>${sub?`<p class="sub">${sub}</p>`:''}${body}</div>`;
+function seg(key,opts){return `<div class="seg" data-key="${key}">${opts.map(([v,t])=>`<button data-v="${v}" aria-pressed="${S[key]===v}">${esc(t)}</button>`).join('')}</div>`}
+const ctx=extra=>`<p class="ctx">${bList(selB())} · ${selS().length===4?'all four systems':selS().map(k=>NAME[k]).join(', ')}${extra?' · '+extra:''}</p>`;
+const oneBoardHint=()=>selB().length<2?'<p class="note">Select two or three board sizes above to see the trend across scale.</p>':'';
+function maxPair(get){return pairs().reduce((m,p)=>{const v=get(p.b,p.k);return m==null||v>m.v?{...p,v}:m},null)}
+
+function pOverview(){const P=pairs();
+  const t=maxPair((b,k)=>D.legality[b][k].top1),m=maxPair((b,k)=>D.legality[b][k].mass),d=maxPair((b,k)=>D.rel[b][k].lin_macro),ad=P.map(p=>D.int_mass[p.b][p.k][2]);
+  const rows=P.map(({b,k})=>({board:BL[b],sys:NAME[k],top1:D.legality[b][k].top1,mass:D.legality[b][k].mass,p5:D.patk[b][k][3],dec:D.rel[b][k].lin_macro,occ:D.perclass[b][k].occ,ad:D.int_mass[b][k][2],adr:D.int_mass[b][k][3]}));
+  const cols=['top1','mass','p5','dec','occ','ad','adr'];
+  const series={};selS().forEach(k=>series[k]=selB().map(x=>D.rel[x][k].lin_macro));
+  const lab=p=>`${NAME[p.k]} · ${BL[p.b]}`;
+  return ctx('seed 42 · final test split')+`
+  <div class="kpis">${kpi('Highest top-1 legality',f(t.v)+'%',lab(t))}${kpi('Highest legal mass',f(m.v)+'%',lab(m))}${kpi('Best linear board decoding',f(d.v)+'%',lab(d)+' · macro-balanced')}${kpi('Adapted intervention',ad.length>1?sg(Math.min(...ad))+' to '+sg(Math.max(...ad))+' pp':sg(ad[0])+' pp','legal mass on the edited board')}</div>
+  <div class="grid g2">
+  ${card('System scorecard',`${selS().length>1?'Best value per column within each board size in gold · ':''}click a header to sort`,table('score',[{k:'board',label:'Board'},{k:'sys',label:'System'},{k:'top1',label:'Top-1 %',num:1,fmt:v=>f(v)},{k:'mass',label:'Legal mass %',num:1,fmt:v=>f(v)},{k:'p5',label:'P@5 %',num:1,fmt:v=>f(v)},{k:'dec',label:'Decoding %',num:1,fmt:v=>f(v)},{k:'occ',label:'Occupied %',num:1,fmt:v=>f(v)},{k:'ad',label:'Adapted Δ',num:1,fmt:v=>sg(v)},{k:'adr',label:'vs random',num:1,fmt:v=>sg(v)}],rows,{best:bestByBoard(rows,cols),scroll:P.length>8})+
+   '<p class="note">Decoding = macro-balanced accuracy of the relative linear probe. Occupied = probe accuracy on occupied squares only (random side = 50%). Adapted Δ = change in legal mass on the counterfactual board vs the unmodified run; vs random = against the geometry-matched random control (pp).</p>','span2')}
+  ${card('The interaction, by board size','Linear decoding of the relative board (macro-balanced %). Colour = architecture, dashed = JEPA.',legendSys()+lineChart(series,selB().map(x=>BL[x]),{min:60,max:100,step:10,refs:[[66.7,'66.7%: empty squares only']],title:'Decoding by board size',yl:'Macro-balanced accuracy (%)'})+oneBoardHint())}
+  ${card('Main findings','',`<ul class="find">
+   <li><b>No universal winner.</b> Mamba-AR has the highest top-1 legality and Mamba-JEPA the highest linear decodability at every board size.</li>
+   <li><b>The objective's effect depends on the architecture.</b> AR→JEPA raises Mamba's decoding and lowers the Transformer's; the interaction grows from +0.59 pp (8×8) to +5.09 pp (16×16, 95% t-CI +4.23 to +5.95, five seeds).</li>
+   <li><b>JEPA stays close to AR in behaviour</b> (top-1 within 1.45 pp) without an additional cross-entropy term over the move vocabulary during encoder training.</li>
+   <li><b>Scale exposes what 8×8 hides.</b> The best–worst decoding gap grows from 1.32 to 5.39 pp while top-1 stays above 97.5%.</li>
+   <li><b>Part of the represented state is used.</b> The adapted intervention raised counterfactual legal mass in all 12 conditions and beat a geometry-matched random control; the effect shrinks on larger boards.</li></ul>`)}
+  </div>`}
+
+function pBehaviour(){const P=pairs(),L=D.legality;
+  const [a1,b1,s1]=niceAxis(P.flatMap(({b,k})=>[L[b][k].top1,...L[b][k].top1_ci])),[a2,b2,s2]=niceAxis(P.flatMap(({b,k})=>[L[b][k].mass,...L[b][k].mass_ci]));
+  const pk=selB().map(b=>{const sr={};selS().forEach(k=>sr[k]=D.patk[b][k]);let [a,z,st]=niceAxis(selS().flatMap(k=>D.patk[b][k]));z=Math.min(100,z);
+    return (selB().length>1?`<p class="subh">${BL[b]}</p>`:'')+lineChart(sr,['k = 1','k = 2','k = 3','k = 5'],{min:a,max:z,step:st,td:tdOf(st),xl:'Top-k',yl:'P@k (%)',title:'P@k '+BL[b],H:250})}).join('');
+  const lift=P.map(({b,k})=>({board:BL[b],sys:NAME[k],head:L[b][k].head,base:D.lift[b][k].base,top1:D.lift[b][k].top1,lift:D.lift[b][k].lift}));
+  return ctx('50,000 test games · AR: native head · JEPA: frozen head chosen on validation')+`
+  <div class="grid g2">
+  ${card('Top-1 legality','Most probable move is legal in the true state; whiskers show the 95% bootstrap interval (often narrower than the marker).',legendSys()+rowDotCI(P,(b,k)=>[L[b][k].top1,...L[b][k].top1_ci],{min:a1,max:b1,step:s1,td:tdOf(s1),xl:'Top-1 legal (%)',title:'Top-1 legality',tipf:(b,k,v,lo,hi)=>`${BL[b]} · ${NAME[k]} (${L[b][k].head} head)\n${f(v,3)}%  [${f(lo,3)}–${f(hi,3)}]`}))}
+  ${card('Legal probability mass','Total probability assigned to all legal moves.',legendSys()+rowDotCI(P,(b,k)=>[L[b][k].mass,...L[b][k].mass_ci],{min:a2,max:b2,step:s2,td:tdOf(s2),xl:'Legal mass (%)',title:'Legal mass',tipf:(b,k,v,lo,hi)=>`${BL[b]} · ${NAME[k]}\n${f(v,3)}%  [${f(lo,3)}–${f(hi,3)}]`}))}
+  ${card('Legal moves within the top-k predictions','Mean share of legal moves among the first k predictions; one chart per board size because the number of legal moves differs between sizes.',legendSys()+pk)}
+  ${card('Top-1 legality by game phase','Each column is one quarter of the game. Stronger blue = higher.',heat(P,(b,k)=>D.phase[b][k],['0–25%','25–50%','50–75%','75–100%'],96.9,100))}
+  ${card('Lift over random choice','Random baseline = uniform choice over the vocabulary; normalised lift = share of the gap to perfect legality covered.',table('lift',[{k:'board',label:'Board'},{k:'sys',label:'System'},{k:'head',label:'Head'},{k:'base',label:'Random %',num:1,fmt:v=>f(v)},{k:'top1',label:'Top-1 per position %',num:1,fmt:v=>f(v)},{k:'lift',label:'Normalised lift %',num:1,fmt:v=>f(v)}],lift,{scroll:P.length>8}),'span2')}
+  </div>`}
+
+function pRepr(){const P=pairs(),src=S.enc==='rel'?D.rel:D.abs,metric=S.pm==='lin_macro'?'macro':S.pm,k2=S.probe+'_'+metric,Lk=S.probe+'_L';
+  const vals=P.map(({b,k})=>src[b][k][k2]),lo=Math.min(50,Math.floor(Math.min(...vals)/10)*10);
+  const refs=metric==='macro'?[[33.3,'33.3% chance'],[66.7,'66.7% empty only']]:[];
+  const occ=P.map(({b,k})=>({board:BL[b],sys:NAME[k],empty:D.perclass[b][k].empty,mine:D.perclass[b][k].mine,opp:D.perclass[b][k].opp,occ:D.perclass[b][k].occ}));
+  const lay=P.map(({b,k})=>{const x=D.layer[b][k];return {board:BL[b],sys:NAME[k],sel:x.sel,rd:x.reldepth,sm:x.sel_macro,fm:x.final_macro,drop:x.sel_macro-x.final_macro}});
+  const all=P.map(({b,k})=>{const s=src[b][k];return {board:BL[b],sys:NAME[k],lm:s.lin_macro,lo:s.lin_overall,ll:s.lin_L,mm:s.mlp_macro,mo:s.mlp_overall,ml:s.mlp_L}});
+  return `<div class="ctl"><span>Encoding</span>${seg('enc',[['rel','Relative (mine / yours / empty)'],['abs','Absolute (black / white / empty)']])}
+   <span>Probe</span>${seg('probe',[['lin','Linear'],['mlp','MLP']])}<span>Metric</span>${seg('pm',[['lin_macro','Macro-balanced'],['overall','Overall']])}</div>
+  ${ctx('probe on the last position of each prefix · layer selected on validation · 16,000 test positions per size')}
+  <div class="grid g2">
+  ${card(`${S.enc==='rel'?'Relative':'Absolute'} encoding · ${S.probe==='lin'?'linear':'MLP'} probe`,`${metric==='macro'?'Macro-balanced accuracy (mean recall of the three classes)':'Overall accuracy (dominated by the empty class)'}, % · selected layer in the tooltip`,
+     legendSys()+rowBars(P,(b,k)=>src[b][k][k2],{min:lo,max:100,step:10,base:lo,xl:metric==='macro'?'Macro-balanced accuracy (%)':'Overall accuracy (%)',refs,title:'Probe accuracy',tipf:(b,k,v)=>`${BL[b]} · ${NAME[k]}\n${f(v)}% at layer ${src[b][k][Lk]}`}))}
+  ${card('Per-class recall (relative linear probe)','Empty squares are almost free: a square is empty exactly when its move has not been played. The side of occupied squares is the hard part.',
+     legendDots([['Empty','var(--na)'],['Mine','var(--ad)'],["Opponent's",'var(--li)']])+rowGroupBars(P,(b,k)=>D.perclass[b][k],[{key:'empty',label:'Empty',color:'na'},{key:'mine',label:'Mine',color:'ad'},{key:'opp',label:"Opponent's",color:'li'}],{min:0,max:100,step:20,base:0,xl:'Recall (%)',title:'Per-class recall',d:2,unsigned:1,extra:(b,k)=>`\nOccupied squares: ${f(D.perclass[b][k].occ)}%`}))}
+  ${card('Accuracy on occupied squares and where decodability peaks','Relative linear probe. Occupied = accuracy on squares with a piece (a random choice of side gives 50%). Selected layer vs final layer; Transformer has 8 blocks, Mamba 15.',
+     table('layer',[{k:'board',label:'Board'},{k:'sys',label:'System'},{k:'occ',label:'Occupied %',num:1,fmt:v=>f(v)},{k:'sel',label:'Selected / blocks'},{k:'rd',label:'Relative depth',num:1,fmt:v=>f(v,3)},{k:'sm',label:'Selected macro %',num:1,fmt:v=>f(v)},{k:'fm',label:'Final macro %',num:1,fmt:v=>f(v)},{k:'drop',label:'Peak − final',num:1,fmt:v=>sg(v)}],lay.map((r,i)=>({...r,occ:occ[i].occ})),{scroll:P.length>8}),'span2')}
+  ${card(`Both probe families · ${S.enc==='rel'?'relative':'absolute'} encoding`,'Macro-balanced and overall accuracy (%) with the selected layer.',
+     table('allprobe',[{k:'board',label:'Board'},{k:'sys',label:'System'},{k:'lm',label:'Linear macro',num:1,fmt:v=>f(v)},{k:'lo',label:'Linear overall',num:1,fmt:v=>f(v)},{k:'ll',label:'L',num:1},{k:'mm',label:'MLP macro',num:1,fmt:v=>f(v)},{k:'mo',label:'MLP overall',num:1,fmt:v=>f(v)},{k:'ml',label:'L',num:1}],all,{scroll:P.length>8}),'span2')}
+  </div>
+  <p class="note">33.3% is random classification, but 66.7% is reached by recognising empty squares perfectly and guessing the side of every occupied square, with no tracking of flips. On the relative encoding the board is recovered almost fully at 8×8 and only partially at 16×16. The absolute linear probe stays close to that 66.7% level everywhere, so absolute colour is barely linearly readable while the player-relative description is.</p>`}
+
+const CM={int_mass:D.int_mass,int_top1:D.int_top1,int_fpfn:D.int_fpfn};
+function pCausal(){const P=pairs(),M=CM[S.cm],d=S.cm==='int_top1'?1:2;
+  const unit={int_mass:'Change in legal mass on the counterfactual board (pp)',int_top1:'Change in top-1 legality on the counterfactual board (pp)',int_fpfn:'Change in false positives + false negatives per case (lower is better)'}[S.cm];
+  const ser=S.cmp==='unmod'?[{key:'li',label:'Li',color:'li'},{key:'na',label:'Nanda',color:'na'},{key:'ad',label:'Adapted',color:'ad'}]:[{key:'ad',label:'Adapted vs unmodified',color:'ad'},{key:'ar',label:'Adapted vs random control',color:'gold'}];
+  const get=(b,k)=>({li:M[b][k][0],na:M[b][k][1],ad:M[b][k][2],ar:M[b][k][3]});
+  const allv=P.flatMap(({b,k})=>ser.map(s=>get(b,k)[s.key]));const [lo,hi,st]=niceAxis([0,...allv],.08,7);
+  const tab=P.map(({b,k})=>({board:BL[b],sys:NAME[k],head:D.head_alpha[b][k].head,alpha:D.head_alpha[b][k].alpha,li:M[b][k][0],na:M[b][k][1],ad:M[b][k][2],ar:M[b][k][3]}));
+  const sr={};selS().forEach(k=>sr[k]=selB().map(x=>M[x][k][2]));const v=selS().flatMap(k=>sr[k]);const [a,z,s2]=niceAxis([0,...v]);
+  return `<div class="ctl"><span>Metric</span>${seg('cm',[['int_mass','Legal mass'],['int_top1','Top-1 legality'],['int_fpfn','FP + FN errors']])}<span>Compare</span>${seg('cmp',[['unmod','Three methods vs unmodified'],['rand','Adapted vs random control']])}</div>
+  ${ctx('1,000 counterfactual cases per size (one occupied square flipped) · 200 separate cases for selecting α')}
+  <div class="grid g2">
+  ${card(S.cmp==='unmod'?'Li, Nanda and adapted interventions':'Adapted intervention against its random control',unit,legendDots(ser.map(s=>[s.label,`var(--${s.color})`]))+rowGroupBars(P,get,ser,{min:lo,max:hi,step:st,td:tdOf(st),base:0,xl:unit,title:'Intervention effects',d}))}
+  ${card('Adapted intervention across board sizes',`${S.cm==='int_mass'?'Legal mass':S.cm==='int_top1'?'Top-1 legality':'FP + FN'} vs the unmodified run`,legendSys()+lineChart(sr,selB().map(x=>BL[x]),{min:a,max:z,step:s2,td:tdOf(s2),signed:1,title:'Adapted effect by board',yl:'pp',d})+oneBoardHint())}
+  ${card('Settings and all values','Head used for the prediction and strength α chosen for the adapted method on the 200 selection cases.',table('causal',[{k:'board',label:'Board'},{k:'sys',label:'System'},{k:'head',label:'Head'},{k:'alpha',label:'α',num:1},{k:'li',label:'Li Δ',num:1,fmt:v=>sg(v,d)},{k:'na',label:'Nanda Δ',num:1,fmt:v=>sg(v,d)},{k:'ad',label:'Adapted Δ',num:1,fmt:v=>sg(v,d)},{k:'ar',label:'Adapted − random',num:1,fmt:v=>sg(v,d)}],tab,{scroll:P.length>8})+
+   `<p class="note">Read the ranking with care: only the adapted method had its strength tuned on validation and it intervenes after every block. No paired uncertainty intervals were computed; small differences can be a handful of cases (e.g. +0.40 pp top-1 vs random on Transformer-JEPA 16×16 = four cases of 1,000). Larger boards have more legal moves, so one flipped square changes a smaller part of the legal set and leaves less room for improvement.</p>`,'span2')}
+  </div>`}
+
+function pSeeds(){const sb=selB().filter(b=>b!=='12');
+  if(!sb.length) return `<div class="card"><h3>No multi-seed runs at 12×12</h3><p class="sub">Five independent training runs (seeds 42, 0, 1, 2, 3) exist only at 8×8 and 16×16.</p><div class="ctl"><button class="plain" data-boards="8">Show 8×8</button><button class="plain" data-boards="16">Show 16×16</button><button class="plain" data-boards="8,16">Show both</button></div></div>`;
+  const m=S.sm,mm=m==='Top-1'?'Top-1 legality':m;
+  const eff=sb.map(b=>{const rows=['Architecture','Objective','Interaction'].map(e=>{const x=D.effects.find(z=>z.board==+b&&z.metric===mm&&z.effect===e);
+      return {label:e,diff:x.diff,lo:x.ci[0],hi:x.ci[1],tip:`${e} · ${BL[b]}\n${sg(x.diff)} pp [${sg(x.ci[0])}; ${sg(x.ci[1])}]\np_t ${x.p_t} · p_Holm ${x.p_holm}\nexact sign-flip p ${x.p_exact} · seeds +/0/− ${x.signs}\nHedges' g_z ${sg(x.gz)}`}});
+    const [lo,hi,st]=niceAxis([0,...rows.map(r=>r.lo),...rows.map(r=>r.hi)],.1,7);
+    return (sb.length>1?`<p class="subh">${BL[b]}</p>`:'')+effects(rows,{min:lo,max:hi,step:st,td:tdOf(st),title:'Matched effects '+BL[b]})}).join('');
+  const P=pairs(sb);let mean='<p class="note">Per-system five-seed means for legal mass are not tabulated in the thesis; choose top-1 legality or relative-state decoding.</p>';
+  if(m!=='Legal mass'){const key=m==='Top-1'?'top1':'rel',get=(b,k)=>{const [mu,sd]=D.seeds[b][k][key];return [mu,mu-sd,mu+sd]};
+    const [a,z,st]=niceAxis(P.flatMap(({b,k})=>get(b,k).slice(1)));
+    mean=legendSys()+rowDotCI(P,get,{min:a,max:z,step:st,td:tdOf(st),xl:(m==='Top-1'?'Top-1 legal':'Relative state, macro-balanced')+' (%) · mean ± sd',title:'Mean and sd',tipf:(b,k,mu,l,h)=>`${BL[b]} · ${NAME[k]}\nmean ${f(mu)}% · sd ${f(h-mu)}`})}
+  const tab=D.effects.filter(z=>sb.includes(String(z.board))).map(z=>({board:BL[z.board],metric:z.metric,effect:z.effect,diff:z.diff,ci:`[${sg(z.ci[0])}; ${sg(z.ci[1])}]`,pt:z.p_t,ph:z.p_holm,pe:z.p_exact,signs:z.signs,gz:z.gz}));
+  return `<div class="ctl"><span>Metric</span>${seg('sm',[['Top-1','Top-1 legality'],['Legal mass','Legal mass'],['Relative state','Relative-state decoding']])}</div>
+  <p class="ctx">${bList(sb)} · five independent training runs (seeds 42, 0, 1, 2, 3) · contrasts computed within seed</p>
+  ${selB().includes('12')?'<p class="note">12×12 has no multi-seed runs and is left out of this tab.</p>':''}
+  <div class="grid g2">
+  ${card('Matched effects','Architecture = Mamba − Transformer · Objective = JEPA − AR · Interaction = how much more favourable AR→JEPA is on Mamba. These contrasts always use all four systems, so the system filter does not apply here.',eff)}
+  ${card('Five-seed mean ± standard deviation',m==='Legal mass'?'':'Each interval spans one standard deviation either side of the mean.',mean)}
+  ${card('All tests','Paired t-tests with Holm correction within each metric; exact sign-flip tests cannot go below p = 0.0625 with five seeds.',table('tests',[{k:'board',label:'Board'},{k:'metric',label:'Metric'},{k:'effect',label:'Effect'},{k:'diff',label:'Diff (pp)',num:1,fmt:v=>sg(v)},{k:'ci',label:'95% t-CI',num:1},{k:'pt',label:'p_t',num:1},{k:'ph',label:'p_Holm',num:1},{k:'pe',label:'p_exact',num:1},{k:'signs',label:'Seeds +/0/−',num:1},{k:'gz',label:"g_z",num:1,fmt:v=>sg(v)}],tab,{scroll:tab.length>9}),'span2')}
+  </div>`}
+
+const SCM={top1:['Top-1 legality (%)',(x,k)=>D.legality[x][k].top1],mass:['Legal probability mass (%)',(x,k)=>D.legality[x][k].mass],p5:['P@5 (%)',(x,k)=>D.patk[x][k][3]],
+  dec:['Linear decoding, macro-balanced (%)',(x,k)=>D.rel[x][k].lin_macro],occ:['Probe accuracy on occupied squares (%)',(x,k)=>D.perclass[x][k].occ],
+  ad:['Adapted intervention: legal mass Δ (pp)',(x,k)=>D.int_mass[x][k][2]],adr:['Adapted − random control: legal mass (pp)',(x,k)=>D.int_mass[x][k][3]]};
+function pScale(){const [lab,get]=SCM[S.scm],sr={},ks=selS(),bs=selB();ks.forEach(k=>sr[k]=bs.map(x=>get(x,k)));
+  const v=ks.flatMap(k=>sr[k]),sgn=S.scm.startsWith('ad');let [a,z,st]=niceAxis(sgn?[0,...v]:v);if(!sgn)z=Math.min(100,z);
+  const spread=bs.map(x=>{const vv=ks.map(k=>get(x,k));return {board:BL[x],best:NAME[ks[vv.indexOf(Math.max(...vv))]],worst:NAME[ks[vv.indexOf(Math.min(...vv))]],gap:Math.max(...vv)-Math.min(...vv)}});
+  return `<div class="ctl"><span>Metric</span><select id="scm" aria-label="Metric">${Object.entries(SCM).map(([k,[l]])=>`<option value="${k}"${S.scm===k?' selected':''}>${l}</option>`).join('')}</select></div>
+  ${ctx('seed 42')}
+  <div class="grid g2">
+  ${card(lab,'Colour = architecture, dashed = JEPA',legendSys()+lineChart(sr,bs.map(x=>BL[x]),{min:a,max:z,step:st,td:tdOf(st),title:lab,yl:lab,d:2,signed:sgn})+oneBoardHint())}
+  ${card('Spread between the selected systems',ks.length>1?'Best minus worst at each size (from the rounded table values).':'Select at least two systems to compare them.',(ks.length>1?table('spread',[{k:'board',label:'Board'},{k:'best',label:'Best'},{k:'worst',label:'Worst'},{k:'gap',label:'Gap (pp)',num:1,fmt:v=>f(v)}],spread):'')+
+   `<ul class="find"><li>Top-1 legality stays above 97.5%, but expressed as distance from 100% its error multiplies by 3.7–6.2 from 8×8 to 16×16; the probability on illegal moves by 5.4–14.1; the decoding error by 5.5–8.3.</li><li>Transformer-JEPA is the most scale-sensitive system (−18.4 pp decoding vs −14.0 to −14.5 pp for the others).</li><li>Positions, vocabulary, game length and reachable states grow together while d<sub>model</sub> stays 512, so scale is not a single isolated change.</li></ul>`)}
+  </div>`}
+
+function pDev(){const m=S.dm,archs=new Set(selS().map(k=>ARCH[k])),rows=[];
+  if(archs.has('t')) D.dev_T.forEach(r=>rows.push({a:'Transformer',...r}));
+  if(archs.has('m')) D.dev_M.forEach(r=>rows.push({a:'Mamba',...r}));
+  const shown=rows.filter(r=>r[m]!=null);
+  const rh=28,th=16,gutter=330,right=70,WW=1100,H=6+rh*shown.length+40,pw=WW-gutter-right,X=v=>gutter+v/100*pw;
+  let s=`<svg class="ch wide" viewBox="0 0 ${WW} ${H}" role="img" aria-label="JEPA development">`;
+  for(const t of ticks(0,100,20)) s+=`<line class="grid" x1="${X(t)}" y1="6" x2="${X(t)}" y2="${H-36}"/><text class="tick" x="${X(t)}" y="${H-20}" text-anchor="middle">${t}</text>`;
+  s+=`<text class="tick" x="${gutter+pw/2}" y="${H-3}" text-anchor="middle">${m==='top1'?'Top-1 legal move (%)':'Relative-state probe, macro-balanced (%)'}</text>`;
+  shown.forEach((r,i)=>{const y0=6+rh*i,y=y0+(rh-th)/2,x1=X(r[m]),c=r.a==='Transformer'?'t':'m';
+    s+=`<text class="rowlab" x="${gutter-10}" y="${y+th-3}" text-anchor="end">${esc(r.a+' · '+r.cfg)}</text><path fill="var(--${c})" d="M${gutter},${y}H${x1-4}a4,4 0 0 1 4,4V${y+th-4}a4,4 0 0 1 -4,4H${gutter}Z"/><text class="val" x="${x1+7}" y="${y+th-3}">${f(r[m])}</text>`;
+    s+=`<rect class="hit" x="0" y="${y0}" width="${WW}" height="${rh}" data-tip="${esc(`${r.a} · ${r.cfg}\nTop-1 legal ${f(r.top1)}%\nRelative macro ${r.macro==null?'–':f(r.macro)+'%'} · overall ${f(r.overall)}%\nLayer / split: ${r.layer}`)}"/>`;});
+  s+=`<line class="axis" x1="${gutter}" y1="6" x2="${gutter}" y2="${H-36}"/></svg>`;
+  return `<div class="ctl"><span>Metric</span>${seg('dm',[['top1','Top-1 legality'],['macro','Relative-state decoding']])}</div>
+  <p class="ctx">8×8 development runs of the JEPA-like objective · earlier evaluation protocol · descriptive only · the board filter does not apply; the system filter selects the architecture</p>
+  <div class="grid g2">
+  ${card('From nested to hard-disjoint, all-position training','HD = hard-disjoint: the target encoder sees only the next move, never the shared prefix.',legendDots([...archs].map(a=>[a==='t'?'Transformer':'Mamba',`var(--${a})`]))+s,'span2')}
+  ${archs.has('t')?card('Early single-position Transformer runs','One random boundary per game; relative probe accuracy from the first to the best to the final layer.',table('early',[{k:'v',label:'Version'},{k:'top1',label:'Top-1 %',num:1,fmt:v=>f(v)},{k:'traj',label:'Relative probe: L0 → best → final'},{k:'note',label:'Observation',wrap:1}],D.dev_early),'span2'):''}
+  ${card('Versions explored','What each version changed and why.',table('cfg',[{k:'v',label:'Version'},{k:'view',label:'View and target',wrap:1},{k:'loss',label:'Loss'},{k:'pred',label:'Predictor / horizon'},{k:'q',label:'Question',wrap:1}],D.dev_cfg),'span2')}
+  </div>
+  <p class="note">Two changes made the difference only together: removing the shared prefix from the target and supervising every valid position. All-position training alone left the nested view at 25.43% top-1; with a hard-disjoint target it reached 98.99%. InfoNCE was kept for the combination of near-saturated legality, the cleanest linear decoding and a simple linear predictor.</p>`}
+
+/* ---------- filters & wiring ---------- */
+const PANELS={overview:pOverview,behaviour:pBehaviour,repr:pRepr,causal:pCausal,seeds:pSeeds,scale:pScale,dev:pDev};
+function filtersHTML(){
+  return `<div class="fg" role="group" aria-label="Board sizes"><span class="fl">Board size</span><div class="chips">${B.map(b=>`<button class="chip" data-fb="${b}" aria-pressed="${S.boards.includes(b)}">${BL[b]}</button>`).join('')}<button class="chip all" data-fb="all">All</button></div></div>
+  <div class="fg" role="group" aria-label="Systems"><span class="fl">Systems</span><div class="chips">${SYS.map(k=>`<button class="chip" data-fs="${k}" aria-pressed="${S.sys.includes(k)}">${swatch(k)}${NAME[k]}</button>`).join('')}<button class="chip all" data-fs="all">All</button></div></div>`}
+function toggle(list,v,all){if(v==='all') return all.slice();return list.includes(v)?list.filter(x=>x!==v):all.filter(x=>list.includes(x)||x===v)}
+function emptyState(){const noS=!selS().length,noB=!selB().length&&S.tab!=='dev';if(!noS&&!noB) return null;
+  const what=noS&&noB?'at least one board size and one system':noS?'at least one system':'at least one board size';
+  return `<div class="card empty"><h3>Nothing selected</h3><p class="sub">Choose ${what} above to see the results.</p></div>`}
+function render(){
+  document.getElementById('filters').innerHTML=filtersHTML();
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===S.tab));
+  document.querySelector('#filters .fg').classList.toggle('dim',S.tab==='dev');
+  document.getElementById('panel').innerHTML=emptyState()||PANELS[S.tab]();
+  try{history.replaceState(null,'',`#${S.tab}/${selB().join('.')}/${selS().join('.')}`)}catch(e){}
+}
+document.addEventListener('click',e=>{
+  const fb=e.target.closest('[data-fb]'); if(fb){S.boards=toggle(S.boards,fb.dataset.fb,B);render();return}
+  const fs=e.target.closest('[data-fs]'); if(fs){S.sys=toggle(S.sys,fs.dataset.fs,SYS);render();return}
+  const qb=e.target.closest('[data-boards]'); if(qb){S.boards=qb.dataset.boards.split(',');render();return}
+  const sb=e.target.closest('.seg[data-key] button'); if(sb){S[sb.parentNode.dataset.key]=sb.dataset.v;render();return}
+  const tb=e.target.closest('.tabs button'); if(tb){S.tab=tb.dataset.tab;render();return}
+  const th=e.target.closest('th[data-sort]'); if(th){const id=th.closest('table').dataset.id,k=th.dataset.sort,cur=S.sort[id];
+    S.sort[id]={k,dir:cur&&cur.k===k?-cur.dir:-1};render();}
+});
+document.addEventListener('change',e=>{if(e.target.id==='scm'){S.scm=e.target.value;render()}});
+document.addEventListener('keydown',e=>{const t=e.target.closest('.tabs button');if(!t)return;const bs=[...document.querySelectorAll('.tabs button')];let i=bs.indexOf(t);
+  if(e.key==='ArrowRight')i=(i+1)%bs.length;else if(e.key==='ArrowLeft')i=(i-1+bs.length)%bs.length;else return;e.preventDefault();S.tab=bs[i].dataset.tab;render();document.querySelectorAll('.tabs button')[i].focus()});
+(function(){const m=location.hash.match(/^#(\w+)(?:\/([\d.]*))?(?:\/([A-Z.\-]*))?$/);if(!m||!PANELS[m[1]])return;S.tab=m[1];
+  if(m[2]!==undefined) S.boards=m[2].split('.').filter(x=>B.includes(x));
+  if(m[3]!==undefined) S.sys=m[3].split('.').filter(x=>SYS.includes(x));})();
+render();
+
+
+(function(){const tip=document.getElementById('tip');
+function show(e,t){tip.textContent=t;tip.style.display='block';move(e)}
+function move(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY+14;
+if(x+w>innerWidth-8)x=e.clientX-w-14;if(y+h>innerHeight-8)y=e.clientY-h-14;tip.style.left=x+'px';tip.style.top=y+'px'}
+document.addEventListener('pointerover',e=>{const el=e.target.closest('[data-tip]');if(el&&el.dataset.tip)show(e,el.dataset.tip)});
+document.addEventListener('pointermove',e=>{if(tip.style.display==='block'){const el=e.target.closest('[data-tip]');if(!el){tip.style.display='none';return}move(e)}});
+document.addEventListener('pointerout',e=>{const el=e.target.closest('[data-tip]');if(el&&!el.contains(e.relatedTarget))tip.style.display='none'});
+})();
+</script>
+</body></html>
