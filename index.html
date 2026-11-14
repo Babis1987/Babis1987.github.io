@@ -4,7 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#03101a" />
-    <link rel="preload" as="image" href="./images/physics-ai-cover.webp" fetchpriority="high" />
+    <script>
+      // Pick the language before React loads (same rule as detectLang in src/i18n/lang.ts):
+      // the saved choice, else Greek for an `el` browser, else English. Sets <html lang> and
+      // preloads the cover image with the matching text.
+      (function () {
+        var lang = 'en'
+        try {
+          var saved = localStorage.getItem('lang')
+          if (saved === 'en' || saved === 'el') lang = saved
+          else if (/^el\b/i.test(navigator.language || '')) lang = 'el'
+        } catch (e) {
+          if (/^el\b/i.test(navigator.language || '')) lang = 'el'
+        }
+        document.documentElement.lang = lang
+        var link = document.createElement('link')
+        link.rel = 'preload'
+        link.as = 'image'
+        link.setAttribute('fetchpriority', 'high')
+        link.href = lang === 'el' ? './images/physics-ai-cover-el.webp' : './images/physics-ai-cover.webp'
+        document.head.appendChild(link)
+      })()
+    </script>
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta name="description" content="Charalampos Lazaridis Patsalias: MSc AI researcher studying how architecture and training objective shape what sequence models represent. Thesis on Transformer vs Mamba, autoregressive vs JEPA." />
     <link rel="canonical" href="https://clazaridis.com/" />
@@ -28,8 +49,8 @@
       async
       src="https://gc.zgo.at/count.js"
     ></script>
-    <script type="module" crossorigin src="./assets/index-CWb6FpsD.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CLwRrieC.css">
+    <script type="module" crossorigin src="./assets/index-hmBoPa3A.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BPQpIACZ.css">
   </head>
   <body>
     <div id="root"></div>
