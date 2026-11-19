@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#03101a" />
+    <script>
+      // Pick the language before React loads (same rule as detectLang in src/i18n/lang.ts):
+      // the saved choice, else Greek for an `el` browser, else English. Sets <html lang> and,
+      // on the home page (the only page with the cover), preloads the cover with the matching text.
+      (function () {
+        var lang = 'en'
+        try {
+          var saved = localStorage.getItem('lang')
+          if (saved === 'en' || saved === 'el') lang = saved
+          else if (/^el\b/i.test(navigator.language || '')) lang = 'el'
+        } catch (e) {
+          if (/^el\b/i.test(navigator.language || '')) lang = 'el'
+        }
+        document.documentElement.lang = lang
+        if (location.pathname !== '/' && location.pathname !== '/index.html') return
+        var link = document.createElement('link')
+        link.rel = 'preload'
+        link.as = 'image'
+        link.setAttribute('fetchpriority', 'high')
+        link.href = lang === 'el' ? '/images/physics-ai-cover-el.webp' : '/images/physics-ai-cover.webp'
+        document.head.appendChild(link)
+      })()
+    </script>
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="description" content="Applied AI in a biotech startup: machine learning on biochemical data, LLM pipelines over scientific literature and evaluation methodology. Research focus: training objectives, architectures, interpretability." />
+    <link rel="canonical" href="https://clazaridis.com/experience/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://clazaridis.com/experience/" />
+    <meta property="og:title" content="Experience · Charalampos Lazaridis Patsalias" />
+    <meta property="og:description" content="Applied AI in a biotech startup: machine learning on biochemical data, LLM pipelines over scientific literature and evaluation methodology. Research focus: training objectives, architectures, interpretability." />
+    <meta property="og:image" content="https://clazaridis.com/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"Charalampos Lazaridis Patsalias","url":"https://clazaridis.com/","jobTitle":"AI Researcher","alumniOf":["University of Essex","Utrecht University","Aristotle University of Thessaloniki"],"sameAs":["https://github.com/Babis1987","https://www.linkedin.com/in/charalampos-lazaridis-patsalias/","https://huggingface.co/mpampinos1987"]}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>Experience · Charalampos Lazaridis Patsalias</title>
+    <script
+      data-goatcounter="https://clazaridis.goatcounter.com/count"
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
+    <script type="module" crossorigin src="/assets/index-BOpsHjH2.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CIjKCAD7.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
